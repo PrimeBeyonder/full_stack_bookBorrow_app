@@ -25,7 +25,7 @@
 ## 🛠️ Quick Start
 
 ```
-git clone https://github.com/yourusername/bookborrow
+git clone https://github.com/PrimeBeyonder/full_stack_bookBorrow_app
 cd bookborrow
 bun install
 ```
