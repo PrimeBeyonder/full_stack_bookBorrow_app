@@ -24,9 +24,9 @@ export default function Hero({ title, subtitle, description, ctaText, secondaryC
             <p className="text-xl mb-4 text-neutral-700">{subtitle}</p>
             <p className="text-base mb-8 text-neutral-600">{description}</p>
             <div className="flex flex-col sm:flex-row gap-4 mb-12">
-              <Link href="/signup" className="btn btn-primary">
+              <Link href="/signup" className="btn btn-primary  inline-flex items-center">
                 {ctaText}
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <span><ArrowRight className="ml-2 h-5 w-5" /></span>
               </Link>
               <Link href="#how-it-works" className="btn btn-outline">
                 {secondaryCtaText}
