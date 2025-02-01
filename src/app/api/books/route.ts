@@ -1,4 +1,5 @@
 import { prisma } from "@/app/lib/prisma";
+import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -16,10 +17,10 @@ export async function GET(request: Request) {
         where: where
     })
     if(!books) {
-        return new Response("No books found", { status: 404 })
+        return new NextResponse("No books found", { status: 404 })
     }
 
-    return Response.json(books, { status: 200 })
+    return NextResponse.json(books, { status: 200 })
 }
 
 export async function POST(request:Request) {  
@@ -27,6 +28,6 @@ export async function POST(request:Request) {
     const book = await prisma.books.create({
         data: body
     })
-    return Response.json(book, { status: 200 })
+    return NextResponse.json(book, { status: 200 })
     
 }
