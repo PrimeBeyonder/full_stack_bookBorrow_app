@@ -1,38 +1,41 @@
-generator client {
-  provider = "prisma-client-js"
-}
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id             String   @id @default(cuid())
-  email          String   @unique
-  name           String?
-  image          String?
-  emailVerified  DateTime?
-  hashedPassword String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  borrowings     Borrowing[]
-  wishlists      Wishlist[]
+generator client {
+  provider = "prisma-client-js"
 }
 
 model Book {
-  id          String   @id @default(cuid())
-  title       String
-  author      String
-  isbn        String   @unique
-  genre       String
-  description String?
-  coverImage  String?
-  available   Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  borrowings  Borrowing[]
-  wishlists   Wishlist[]
+  id              String   @id @default(cuid())
+  title           String
+  author          String
+  isbn            String   @unique
+  publicationYear Int
+  publisher       String
+  description     String
+  coverImage      String?
+  genre           String[]
+  language        String
+  pageCount       Int
+  availableCopies Int
+  totalCopies     Int
+  rating          Float?
+  reviews         Review[]
+  borrowings      Borrowing[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  borrowings Borrowing[]
+  reviews    Review[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Borrowing {
@@ -42,16 +45,27 @@ model Borrowing {
   borrowDate DateTime @default(now())
   dueDate    DateTime
   returnDate DateTime?
-  status     String   // e.g., "PENDING", "APPROVED", "RETURNED", "OVERDUE"
+  status     BorrowingStatus
   user       User     @relation(fields: [userId], references: [id])
   book       Book     @relation(fields: [bookId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
-model Wishlist {
+model Review {
   id        String   @id @default(cuid())
   userId    String
   bookId    String
-  createdAt DateTime @default(now())
+  rating    Int
+  comment   String?
   user      User     @relation(fields: [userId], references: [id])
   book      Book     @relation(fields: [bookId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum BorrowingStatus {
+  BORROWED
+  RETURNED
+  OVERDUE
 }
