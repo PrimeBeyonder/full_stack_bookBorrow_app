@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Book, BookOpen, Star } from "lucide-react"
+import { Book, BookOpen, Star, Tag } from "lucide-react"
 
 export function Sidebar() {
   return (
@@ -20,7 +20,12 @@ export function Sidebar() {
           <Star className="h-5 w-5" />
           <span>Reviews</span>
         </Link>
+        <Link href="/dashboard/genres" className="flex items-center space-x-2 rounded-lg p-2 hover:bg-gray-100">
+          <Tag className="h-5 w-5" />
+          <span>Genres</span>
+        </Link>
       </nav>
     </div>
   )
 }
+
