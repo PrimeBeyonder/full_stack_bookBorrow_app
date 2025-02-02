@@ -21,6 +21,7 @@ model Book {
   publisher       String
   description     String
   coverImage      String?
+  ebookFile       String?
   genreId         String
   genre           Genre    @relation(fields: [genreId], references: [id])
   language        String
