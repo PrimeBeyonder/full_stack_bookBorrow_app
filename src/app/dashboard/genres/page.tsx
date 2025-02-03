@@ -1,28 +1,23 @@
 "use client"
 
-import { useState, useEffect, type ChangeEvent, type FormEvent } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 
 interface Genre {
-  id: string;
-  name: string;
-}
-
-interface GenreForm {
-  id: string;
-  name: string;
+  id: string
+  name: string
 }
 
 export default function GenresPage() {
   const [genres, setGenres] = useState<Genre[]>([])
-  const [genreForm, setGenreForm] = useState<GenreForm>({ id: "", name: "" })
+  const [newGenre, setNewGenre] = useState("")
+  const [editingGenre, setEditingGenre] = useState<Genre | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [isEditing, setIsEditing] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -32,12 +27,9 @@ export default function GenresPage() {
   const fetchGenres = async () => {
     try {
       const response = await fetch("/api/genres")
-      if (response.ok) {
-        const data = await response.json()
-        setGenres(data)
-      } else {
-        throw new Error("Failed to fetch genres")
-      }
+      if (!response.ok) throw new Error("Failed to fetch genres")
+      const data = await response.json()
+      setGenres(data)
     } catch (error) {
       toast({
         title: "Error",
@@ -47,61 +39,53 @@ export default function GenresPage() {
     }
   }
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setGenreForm({ ...genreForm, [e.target.name]: e.target.value })
-  }
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const url = isEditing ? `/api/genres/${genreForm.id}` : "/api/genres"
-    const method = isEditing ? "PUT" : "POST"
     try {
+      const url = editingGenre ? `/api/genres/${editingGenre.id}` : "/api/genres"
+      const method = editingGenre ? "PUT" : "POST"
+      const body = JSON.stringify({ name: newGenre })
+
       const response = await fetch(url, {
-        method: method,
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(genreForm),
+        body,
       })
-      if (response.ok) {
-        await fetchGenres()
-        setGenreForm({ id: "", name: "" })
-        setIsEditing(false)
-        setIsDialogOpen(false)
-        toast({
-          title: "Success",
-          description: `Genre ${isEditing ? "updated" : "added"} successfully.`,
-        })
-      } else {
-        throw new Error(`Failed to ${isEditing ? "update" : "add"} genre`)
-      }
+
+      if (!response.ok) throw new Error("Failed to save genre")
+
+      await fetchGenres()
+      setNewGenre("")
+      setEditingGenre(null)
+      setIsDialogOpen(false)
+      toast({
+        title: "Success",
+        description: `Genre ${editingGenre ? "updated" : "added"} successfully.`,
+      })
     } catch (error) {
       toast({
         title: "Error",
-        description: `Failed to ${isEditing ? "update" : "add"} genre. Please try again.`,
+        description: `Failed to ${editingGenre ? "update" : "add"} genre. Please try again.`,
         variant: "destructive",
       })
     }
   }
 
   const handleEdit = (genre: Genre) => {
-    setGenreForm(genre)
-    setIsEditing(true)
+    setEditingGenre(genre)
+    setNewGenre(genre.name)
     setIsDialogOpen(true)
   }
 
   const handleDelete = async (id: string) => {
     try {
-      const response = await fetch(`/api/genres/${id}`, {
-        method: "DELETE",
+      const response = await fetch(`/api/genres/${id}`, { method: "DELETE" })
+      if (!response.ok) throw new Error("Failed to delete genre")
+      await fetchGenres()
+      toast({
+        title: "Success",
+        description: "Genre deleted successfully.",
       })
-      if (response.ok) {
-        await fetchGenres()
-        toast({
-          title: "Success",
-          description: "Genre deleted successfully.",
-        })
-      } else {
-        throw new Error("Failed to delete genre")
-      }
     } catch (error) {
       toast({
         title: "Error",
@@ -111,27 +95,30 @@ export default function GenresPage() {
     }
   }
 
-  const openAddDialog = () => {
-    setGenreForm({ id: "", name: "" })
-    setIsEditing(false)
-    setIsDialogOpen(true)
-  }
-
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Genres Management</h1>
-      <Button onClick={openAddDialog}>Add New Genre</Button>
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogTrigger asChild>
+          <Button
+            onClick={() => {
+              setEditingGenre(null)
+              setNewGenre("")
+            }}
+          >
+            Add New Genre
+          </Button>
+        </DialogTrigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{isEditing ? "Edit Genre" : "Add New Genre"}</DialogTitle>
+            <DialogTitle>{editingGenre ? "Edit Genre" : "Add New Genre"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Genre Name</Label>
-              <Input id="name" name="name" value={genreForm.name} onChange={handleInputChange} required />
+              <Input id="name" value={newGenre} onChange={(e) => setNewGenre(e.target.value)} required />
             </div>
-            <Button type="submit">{isEditing ? "Update Genre" : "Add Genre"}</Button>
+            <Button type="submit">{editingGenre ? "Update Genre" : "Add Genre"}</Button>
           </form>
         </DialogContent>
       </Dialog>

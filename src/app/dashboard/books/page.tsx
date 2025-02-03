@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, type ChangeEvent, type FormEvent } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -9,8 +9,12 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { MultiSelect } from "@/components/ui/multiple-select"
 import { useToast } from "@/hooks/use-toast"
+interface Genre {
+  id: string
+  name: string
+}
 
 interface Book {
   id: string
@@ -20,7 +24,7 @@ interface Book {
   publicationYear: number
   publisher: string
   description: string
-  genreId: string
+  genres: Genre[]
   language: string
   pageCount: number
   availableCopies: number
@@ -28,23 +32,21 @@ interface Book {
   ebookFile?: string
 }
 
-interface Genre {
-  id: string
-  name: string
+interface BookFormData extends Omit<Book, "id" | "genres"> {
+  genreIds: string[]
 }
 
 export default function BooksPage() {
   const [books, setBooks] = useState<Book[]>([])
   const [genres, setGenres] = useState<Genre[]>([])
-  const [bookForm, setBookForm] = useState<Book>({
-    id: "",
+  const [bookForm, setBookForm] = useState<BookFormData>({
     title: "",
     author: "",
     isbn: "",
-    publicationYear: 0,
+    publicationYear: new Date().getFullYear(),
     publisher: "",
     description: "",
-    genreId: "",
+    genreIds: [],
     language: "",
     pageCount: 0,
     availableCopies: 0,
@@ -64,12 +66,9 @@ export default function BooksPage() {
   const fetchBooks = async () => {
     try {
       const response = await fetch("/api/books")
-      if (response.ok) {
-        const data = await response.json()
-        setBooks(data)
-      } else {
-        throw new Error("Failed to fetch books")
-      }
+      if (!response.ok) throw new Error("Failed to fetch books")
+      const data = await response.json()
+      setBooks(data)
     } catch (error) {
       toast({
         title: "Error",
@@ -82,12 +81,9 @@ export default function BooksPage() {
   const fetchGenres = async () => {
     try {
       const response = await fetch("/api/genres")
-      if (response.ok) {
-        const data = await response.json()
-        setGenres(data)
-      } else {
-        throw new Error("Failed to fetch genres")
-      }
+      if (!response.ok) throw new Error("Failed to fetch genres")
+      const data = await response.json()
+      setGenres(data)
     } catch (error) {
       toast({
         title: "Error",
@@ -97,21 +93,30 @@ export default function BooksPage() {
     }
   }
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setBookForm({ ...bookForm, [e.target.name]: e.target.value })
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    setBookForm((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleGenreChange = (selectedGenres: string[]) => {
+    setBookForm((prev) => ({ ...prev, genreIds: selectedGenres }))
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       setFile(e.target.files[0])
     }
   }
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const formData = new FormData()
     Object.entries(bookForm).forEach(([key, value]) => {
-      formData.append(key, value.toString())
+      if (Array.isArray(value)) {
+        value.forEach((v) => formData.append(key, v))
+      } else {
+        formData.append(key, value.toString())
+      }
     })
     if (file) {
       formData.append("ebookFile", file)
@@ -125,32 +130,28 @@ export default function BooksPage() {
         method: method,
         body: formData,
       })
-      if (response.ok) {
-        await fetchBooks()
-        setBookForm({
-          id: "",
-          title: "",
-          author: "",
-          isbn: "",
-          publicationYear: 0,
-          publisher: "",
-          description: "",
-          genreId: "",
-          language: "",
-          pageCount: 0,
-          availableCopies: 0,
-          totalCopies: 0,
-        })
-        setFile(null)
-        setIsEditing(false)
-        setIsDialogOpen(false)
-        toast({
-          title: "Success",
-          description: `Book ${isEditing ? "updated" : "added"} successfully.`,
-        })
-      } else {
-        throw new Error(`Failed to ${isEditing ? "update" : "add"} book`)
-      }
+      if (!response.ok) throw new Error(`Failed to ${isEditing ? "update" : "add"} book`)
+      await fetchBooks()
+      setBookForm({
+        title: "",
+        author: "",
+        isbn: "",
+        publicationYear: new Date().getFullYear(),
+        publisher: "",
+        description: "",
+        genreIds: [],
+        language: "",
+        pageCount: 0,
+        availableCopies: 0,
+        totalCopies: 0,
+      })
+      setFile(null)
+      setIsEditing(false)
+      setIsDialogOpen(false)
+      toast({
+        title: "Success",
+        description: `Book ${isEditing ? "updated" : "added"} successfully.`,
+      })
     } catch (error) {
       toast({
         title: "Error",
@@ -161,7 +162,10 @@ export default function BooksPage() {
   }
 
   const handleEdit = (book: Book) => {
-    setBookForm(book)
+    setBookForm({
+      ...book,
+      genreIds: book.genres.map((g) => g.id),
+    })
     setIsEditing(true)
     setIsDialogOpen(true)
   }
@@ -171,15 +175,12 @@ export default function BooksPage() {
       const response = await fetch(`/api/books/${id}`, {
         method: "DELETE",
       })
-      if (response.ok) {
-        await fetchBooks()
-        toast({
-          title: "Success",
-          description: "Book deleted successfully.",
-        })
-      } else {
-        throw new Error("Failed to delete book")
-      }
+      if (!response.ok) throw new Error("Failed to delete book")
+      await fetchBooks()
+      toast({
+        title: "Success",
+        description: "Book deleted successfully.",
+      })
     } catch (error) {
       toast({
         title: "Error",
@@ -191,14 +192,13 @@ export default function BooksPage() {
 
   const openAddDialog = () => {
     setBookForm({
-      id: "",
       title: "",
       author: "",
       isbn: "",
-      publicationYear: 0,
+      publicationYear: new Date().getFullYear(),
       publisher: "",
       description: "",
-      genreId: "",
+      genreIds: [],
       language: "",
       pageCount: 0,
       availableCopies: 0,
@@ -254,23 +254,13 @@ export default function BooksPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="genreId">Genre</Label>
-                <Select
-                  name="genreId"
-                  value={bookForm.genreId}
-                  onValueChange={(value) => setBookForm({ ...bookForm, genreId: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a genre" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {genres.map((genre) => (
-                      <SelectItem key={genre.id} value={genre.id}>
-                        {genre.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="genreIds">Genres</Label>
+                <MultiSelect
+                  options={genres.map((genre) => ({ label: genre.name, value: genre.id }))}
+                  selected={bookForm.genreIds}
+                  onChange={handleGenreChange}
+                  placeholder="Select genres"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="language">Language</Label>
@@ -343,6 +333,9 @@ export default function BooksPage() {
               </p>
               <p>
                 <strong>Available Copies:</strong> {book.availableCopies}
+              </p>
+              <p>
+                <strong>Genres:</strong> {book.genres.map((g) => g.name).join(", ")}
               </p>
             </CardContent>
             <CardFooter className="flex justify-between">
