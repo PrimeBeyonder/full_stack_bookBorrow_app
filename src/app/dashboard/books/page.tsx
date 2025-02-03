@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { MultiSelect } from "@/components/ui/multiple-select"
 import { useToast } from "@/hooks/use-toast"
+
 interface Genre {
   id: string
   name: string
@@ -39,6 +40,10 @@ interface BookFormData extends Omit<Book, "id" | "genres"> {
 export default function BooksPage() {
   const [books, setBooks] = useState<Book[]>([])
   const [genres, setGenres] = useState<Genre[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
   const [bookForm, setBookForm] = useState<BookFormData>({
     title: "",
     author: "",
@@ -52,8 +57,6 @@ export default function BooksPage() {
     availableCopies: 0,
     totalCopies: 0,
   })
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [isEditing, setIsEditing] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const { toast } = useToast()
   const router = useRouter()
@@ -69,12 +72,10 @@ export default function BooksPage() {
       if (!response.ok) throw new Error("Failed to fetch books")
       const data = await response.json()
       setBooks(data)
+      setIsLoading(false)
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch books. Please try again.",
-        variant: "destructive",
-      })
+      setError("Failed to fetch books. Please try again.")
+      setIsLoading(false)
     }
   }
 
@@ -85,11 +86,7 @@ export default function BooksPage() {
       const data = await response.json()
       setGenres(data)
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch genres. Please try again.",
-        variant: "destructive",
-      })
+      setError("Failed to fetch genres. Please try again.")
     }
   }
 
@@ -122,15 +119,12 @@ export default function BooksPage() {
       formData.append("ebookFile", file)
     }
 
-    const url = isEditing ? `/api/books/${bookForm.id}` : "/api/books"
-    const method = isEditing ? "PUT" : "POST"
-
     try {
-      const response = await fetch(url, {
-        method: method,
-        body: formData,
-      })
+      const url = isEditing ? `/api/books/${bookForm.id}` : "/api/books"
+      const method = isEditing ? "PUT" : "POST"
+      const response = await fetch(url, { method, body: formData })
       if (!response.ok) throw new Error(`Failed to ${isEditing ? "update" : "add"} book`)
+
       await fetchBooks()
       setBookForm({
         title: "",
@@ -172,9 +166,7 @@ export default function BooksPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      const response = await fetch(`/api/books/${id}`, {
-        method: "DELETE",
-      })
+      const response = await fetch(`/api/books/${id}`, { method: "DELETE" })
       if (!response.ok) throw new Error("Failed to delete book")
       await fetchBooks()
       toast({
@@ -208,6 +200,9 @@ export default function BooksPage() {
     setIsEditing(false)
     setIsDialogOpen(true)
   }
+
+  if (isLoading) return <div>Loading...</div>
+  if (error) return <div>Error: {error}</div>
 
   return (
     <div className="space-y-4">

@@ -1,33 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/app/lib/prisma"
-import formidable from "formidable"
-import { mkdir } from "fs/promises"
+import { writeFile } from "fs/promises"
 import path from "path"
-
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-}
-
-interface FormFields {
-  title: string;
-  author: string;
-  isbn: string;
-  publicationYear: string;
-  publisher: string;
-  description: string;
-  genreId: string;
-  language: string;
-  pageCount: string;
-  availableCopies: string;
-  totalCopies: string;
-}
-
-interface FormFiles {
-  ebookFile?: formidable.File[];
-}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -38,73 +12,63 @@ export async function GET(request: Request) {
   const where = {
     ...(title && { title: { contains: title, mode: "insensitive" } }),
     ...(author && { author: { contains: author, mode: "insensitive" } }),
-    ...(genre && { genre: { name: genre } }),
+    ...(genre && { genres: { some: { name: genre } } }),
   }
 
   try {
     const books = await prisma.book.findMany({
       where,
-      include: { genre: true },
+      include: { genres: true },
     })
     return NextResponse.json(books)
   } catch (error) {
     console.error("Error fetching books:", error)
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to fetch books" }, { status: 500 })
   }
 }
 
 export async function POST(request: Request) {
-  // Ensure upload directory exists
-  const uploadDir = path.join(process.cwd(), "public", "ebooks")
   try {
-    await mkdir(uploadDir, { recursive: true })
-  } catch (error) {
-    console.error("Error creating upload directory:", error)
-  }
+    const formData = await request.formData()
+    const bookData = Object.fromEntries(formData)
 
-  const form = formidable({
-    uploadDir,
-    filename: (name, ext, part) => {
-      return `${Date.now()}-${part.originalFilename}`
-    },
-  })
+    let ebookFilePath = null
+    const ebookFile = formData.get("ebookFile") as File | null
+    if (ebookFile) {
+      const bytes = await ebookFile.arrayBuffer()
+      const buffer = Buffer.from(bytes)
+      const fileName = `${Date.now()}-${ebookFile.name}`
+      const filePath = path.join(process.cwd(), "public", "ebooks", fileName)
+      await writeFile(filePath, buffer)
+      ebookFilePath = `/ebooks/${fileName}`
+    }
 
-  return new Promise((resolve, reject) => {
-    form.parse(request, async (err, fields: FormFields, files: FormFiles) => {
-      if (err) {
-        console.error("Error parsing form:", err)
-        reject(NextResponse.json({ error: "Error parsing form data" }, { status: 500 }))
-        return
-      }
+    const genreIds = formData.getAll("genreIds") as string[]
 
-      try {
-        let ebookFilePath = null
-        if (files.ebookFile && files.ebookFile[0]) {
-          const file = files.ebookFile[0]
-          ebookFilePath = `/ebooks/${file.newFilename}`
-        }
-
-        const bookData = {
-          title: fields.title,
-          author: fields.author,
-          isbn: fields.isbn,
-          publicationYear: parseInt(fields.publicationYear),
-          publisher: fields.publisher,
-          description: fields.description,
-          genreId: fields.genreId,
-          language: fields.language,
-          pageCount: parseInt(fields.pageCount),
-          availableCopies: parseInt(fields.availableCopies),
-          totalCopies: parseInt(fields.totalCopies),
-          ebookFile: ebookFilePath,
-        }
-
-        const book = await prisma.book.create({ data: bookData })
-        resolve(NextResponse.json(book))
-      } catch (error) {
-        console.error("Error creating book:", error)
-        reject(NextResponse.json({ error: "Internal Server Error" }, { status: 500 }))
-      }
+    const book = await prisma.book.create({
+      data: {
+        title: bookData.title as string,
+        author: bookData.author as string,
+        isbn: bookData.isbn as string,
+        publicationYear: Number(bookData.publicationYear),
+        publisher: bookData.publisher as string,
+        description: bookData.description as string,
+        language: bookData.language as string,
+        pageCount: Number(bookData.pageCount),
+        availableCopies: Number(bookData.availableCopies),
+        totalCopies: Number(bookData.totalCopies),
+        ebookFile: ebookFilePath,
+        genres: {
+          connect: genreIds.map((id) => ({ id })),
+        },
+      },
+      include: { genres: true },
     })
-  })
+
+    return NextResponse.json(book, { status: 201 })
+  } catch (error) {
+    console.error("Error creating book:", error)
+    return NextResponse.json({ error: "Failed to create book" }, { status: 500 })
+  }
 }
+
