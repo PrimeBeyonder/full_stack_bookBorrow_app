@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { MultiSelect } from "@/components/ui/multiple-select"
 import { useToast } from "@/hooks/use-toast"
+import Image from "next/image"
 
 interface Genre {
   id: string
@@ -31,6 +32,7 @@ interface Book {
   availableCopies: number
   totalCopies: number
   ebookFile?: string
+  coverImage?: string
 }
 
 interface BookFormData extends Omit<Book, "id" | "genres"> {
@@ -315,33 +317,47 @@ export default function BooksPage() {
       </Dialog>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {books.map((book) => (
-          <Card key={book.id}>
+          <Card key={book.id} className="overflow-hidden transition-all hover:shadow-lg">
+            <div className="relative h-48 w-full">
+              <Image
+                src={book.coverImage || "/placeholder.svg"}
+                alt={book.title}
+                layout="fill"
+                objectFit="cover"
+                className="transition-transform hover:scale-105"
+              />
+            </div>
             <CardHeader>
-              <CardTitle>{book.title}</CardTitle>
+              <CardTitle className="line-clamp-1">{book.title}</CardTitle>
+              <p className="text-sm text-muted-foreground">{book.author}</p>
             </CardHeader>
             <CardContent>
-              <p>
-                <strong>Author:</strong> {book.author}
-              </p>
-              <p>
-                <strong>ISBN:</strong> {book.isbn}
-              </p>
-              <p>
-                <strong>Available Copies:</strong> {book.availableCopies}
-              </p>
-              <p>
-                <strong>Genres:</strong> {book.genres.map((g) => g.name).join(", ")}
-              </p>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <p className="font-semibold">ISBN:</p>
+                  <p className="text-muted-foreground">{book.isbn}</p>
+                </div>
+                <div>
+                  <p className="font-semibold">Available:</p>
+                  <p className="text-muted-foreground">{book.availableCopies}</p>
+                </div>
+              </div>
+              <div className="mt-2">
+                <p className="font-semibold">Genres:</p>
+                <p className="text-muted-foreground line-clamp-1">{book.genres.map((g) => g.name).join(", ")}</p>
+              </div>
             </CardContent>
             <CardFooter className="flex justify-between">
-              <Button variant="outline" onClick={() => handleEdit(book)}>
+              <Button variant="outline" size="sm" onClick={() => handleEdit(book)}>
                 Edit
               </Button>
-              <Button variant="destructive" onClick={() => handleDelete(book.id)}>
+              <Button variant="destructive" size="sm" onClick={() => handleDelete(book.id)}>
                 Delete
               </Button>
               <Link href={`/dashboard/books/${book.id}`} passHref>
-                <Button variant="link">View Details</Button>
+                <Button variant="link" size="sm">
+                  View Details
+                </Button>
               </Link>
             </CardFooter>
           </Card>
