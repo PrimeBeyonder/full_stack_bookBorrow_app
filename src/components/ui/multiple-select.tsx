@@ -31,40 +31,26 @@ export function MultiSelect({ options, selected, onChange, placeholder = "Select
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between">
-          {selected.length > 0 ? (
-            <div className="flex gap-1 flex-wrap">
-              {selected.map((item) => (
-                <Badge
-                  variant="secondary"
-                  key={item}
-                  className="mr-1 mb-1"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleUnselect(item)
-                  }}
-                >
+          <div className="flex flex-wrap gap-1">
+            {selected.length > 0 ? (
+              selected.map((item) => (
+                <Badge variant="secondary" key={item} className="mr-1 mb-1">
                   {options.find((option) => option.value === item)?.label}
-                  <button
-                    className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleUnselect(item)
-                      }
-                    }}
-                    onMouseDown={(e) => {
-                      e.preventDefault()
+                  <span
+                    className="ml-1 rounded-full outline-none cursor-pointer"
+                    onClick={(e) => {
                       e.stopPropagation()
+                      handleUnselect(item)
                     }}
-                    onClick={() => handleUnselect(item)}
                   >
                     <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                  </button>
+                  </span>
                 </Badge>
-              ))}
-            </div>
-          ) : (
-            <span>{placeholder}</span>
-          )}
+              ))
+            ) : (
+              <span>{placeholder}</span>
+            )}
+          </div>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0">
