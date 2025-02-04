@@ -8,19 +8,19 @@ export function Sidebar() {
         <h1 className="text-2xl font-bold">BookBorrow Admin</h1>
       </div>
       <nav className="flex-1 space-y-2 p-4">
-        <Link href="/dashboard/books" className="flex items-center space-x-2 rounded-lg p-2 hover:bg-gray-100">
+        <Link href="/dashboard/admin/books" className="flex items-center space-x-2 rounded-lg p-2 hover:bg-gray-100">
           <Book className="h-5 w-5" />
           <span>Books</span>
         </Link>
-        <Link href="/dashboard/borrowings" className="flex items-center space-x-2 rounded-lg p-2 hover:bg-gray-100">
+        <Link href="/dashboard/admin/borrowings" className="flex items-center space-x-2 rounded-lg p-2 hover:bg-gray-100">
           <BookOpen className="h-5 w-5" />
           <span>Borrowings</span>
         </Link>
-        <Link href="/dashboard/reviews" className="flex items-center space-x-2 rounded-lg p-2 hover:bg-gray-100">
+        <Link href="/dashboard/admin/reviews" className="flex items-center space-x-2 rounded-lg p-2 hover:bg-gray-100">
           <Star className="h-5 w-5" />
           <span>Reviews</span>
         </Link>
-        <Link href="/dashboard/genres" className="flex items-center space-x-2 rounded-lg p-2 hover:bg-gray-100">
+        <Link href="/dashboard/admin/genres" className="flex items-center space-x-2 rounded-lg p-2 hover:bg-gray-100">
           <Tag className="h-5 w-5" />
           <span>Genres</span>
         </Link>
