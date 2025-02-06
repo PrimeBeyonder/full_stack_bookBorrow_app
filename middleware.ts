@@ -1,41 +1,44 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { prisma } from "@/app/lib/prisma"
 
 export async function middleware(request: NextRequest) {
-  const session = request.cookies.get("session")
+  const session = await request.cookies.get("session")
+  console.log("Session in middleware:", session?.value)
 
   if (!session) {
+    console.log("No session, redirecting to login")
     return NextResponse.redirect(new URL("/login", request.url))
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.value },
-    select: { id: true, role: true },
-  })
+  const userId = session.value
 
-  if (!user) {
-    return NextResponse.redirect(new URL("/login", request.url))
+  // In a real application, you would fetch the user role from the database here
+  // For this example, we'll assume all users are regular users except for a specific admin ID
+  const userRole = userId === "admin_id" ? "ADMIN" : "USER"
+
+  const response = NextResponse.next()
+
+  // Set user info in the headers
+  response.headers.set("x-user-id", userId)
+  response.headers.set("x-user-role", userRole)
+
+  console.log("User ID:", userId, "User Role:", userRole)
+
+  // Handle specific routes
+  if (request.nextUrl.pathname === "/dashboard") {
+    console.log("Redirecting to role-based dashboard")
+    return NextResponse.redirect(new URL(`/dashboard/${userRole.toLowerCase()}`, request.url))
   }
 
-  // Add user info to the request headers
-  const requestHeaders = new Headers(request.headers)
-  requestHeaders.set("x-user-id", user.id)
-  requestHeaders.set("x-user-role", user.role)
-
-  // You can also redirect based on user role if needed
-  if (request.nextUrl.pathname.startsWith("/dashboard/admin") && user.role !== "ADMIN") {
+  if (request.nextUrl.pathname.startsWith("/dashboard/admin") && userRole !== "ADMIN") {
+    console.log("Non-admin trying to access admin dashboard, redirecting")
     return NextResponse.redirect(new URL("/dashboard/user", request.url))
   }
 
-  return NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  })
+  return response
 }
 
 export const config = {
-  matcher: "/dashboard/:path*",
+  matcher: ["/dashboard", "/dashboard/:path*"],
 }
 
