@@ -21,7 +21,7 @@ export async function login(email: string, password: string) {
 
   // Set the session cookie
   const cookieStore = await cookies()
-  await cookieStore.set("session", user.id, {
+  cookieStore.set("session", user.id, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
@@ -29,8 +29,43 @@ export async function login(email: string, password: string) {
     path: "/",
   })
 
-  console.log("Session cookie set:", user.id)
+  return {
+    user: {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+      avatar: user.avatar,
+      bio: user.bio,
+    },
+  }
+}
 
-  return { user: { id: user.id, email: user.email, role: user.role } }
+export async function logout() {
+  const cookieStore = await cookies()
+  cookieStore.delete("session")
+}
+
+export async function getUser() {
+  const cookieStore = cookies()
+  const sessionId = cookieStore.get("session")?.value
+
+  if (!sessionId) {
+    return null
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: sessionId },
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      name: true,
+      avatar: true,
+      bio: true,
+    },
+  })
+
+  return user
 }
 

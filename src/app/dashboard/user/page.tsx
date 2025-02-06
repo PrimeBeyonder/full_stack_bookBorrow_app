@@ -1,29 +1,46 @@
-import { headers } from "next/headers"
-import { prisma } from "@/app/lib/prisma"
+"use client"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { redirect } from "next/navigation"
+import { getUser,logout  } from "@/app/action"
+import { Button } from "@/components/ui/button"
 
-export default async function UserDashboard() {
-  const headersList = await headers()
-  const userId = headersList.get("x-user-id")
+export default function UserDashboard() {
+  interface User {
+    name: string | null;
+    id: string;
+    email: string;
+    bio: string | null;
+    avatar: string | null;
+    role: Role;
+  }
+  
+  const [user, setUser] = useState<User | null>(null)
+  const router = useRouter()
 
-  console.log("User ID in dashboard:", userId)
+  useEffect(() => {
+    const fetchUser = async () => {
+      const userData = await getUser()
+      if (userData) {
+        setUser(userData)
+      } else {
+        router.push("/login")
+      }
+    }
 
-  if (!userId) {
-    console.log("No user ID, redirecting to login")
-    redirect("/login")
+    fetchUser()
+  }, [router])
+
+  const handleLogout = async () => {
+    await logout()
+    localStorage.removeItem("user")
+    router.push("/login")
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-  })
-
-  console.log("User data:", user)
-
   if (!user) {
-    console.log("User not found, redirecting to login")
-    redirect("/login")
+    return <div>Loading...</div>
   }
 
   return (
@@ -34,13 +51,13 @@ export default async function UserDashboard() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-6">
-            <Image
+            {/* <Image
               src={user.avatar || "/placeholder.svg"}
-              alt={user.name}
+              alt={user.name || "User avatar"}
               width={120}
               height={120}
               className="rounded-full"
-            />
+            /> */}
             <div className="flex-1 text-center md:text-left">
               <h2 className="text-2xl font-semibold mb-2">{user.name}</h2>
               <p className="text-gray-600 mb-4">{user.email}</p>
@@ -59,6 +76,9 @@ export default async function UserDashboard() {
                   <p className="text-gray-600">Wishlist</p>
                 </div>
               </div>
+              <Button onClick={handleLogout} className="mt-4">
+                Logout
+              </Button>
             </div>
           </div>
         </CardContent>
