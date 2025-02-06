@@ -1,7 +1,7 @@
 "use client"
 import { redirect, useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { getUser } from "@/app/action"
+import { getUser } from "@/app/api/login/action"
 import { useEffect, useState } from "react"
 export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true)

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { login } from "@/app/action"
+import { login } from "@/app/api/login/action"
 import { toast } from "@/hooks/use-toast"
 
 export default function LoginPage() {

@@ -44,6 +44,7 @@ export async function login(email: string, password: string) {
 export async function logout() {
   const cookieStore = await cookies()
   cookieStore.delete("session")
+  localStorage.removeItem("user")
 }
 
 export async function getUser() {
