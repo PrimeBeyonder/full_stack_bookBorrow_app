@@ -47,7 +47,7 @@ export async function logout() {
 }
 
 export async function getUser() {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const sessionId = cookieStore.get("session")?.value
 
   if (!sessionId) {
