@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { login } from "@/app/action"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -16,21 +17,19 @@ export default function LoginPage() {
     e.preventDefault()
     setError("")
 
-    const response = await fetch("/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    })
-
-    if (response.ok) {
-      const data = await response.json()
-      if (data.user.role === "ADMIN") {
-        router.push("/dashboard/")
+    try {
+      const result = await login(email, password)
+      if (result.error) {
+        setError(result.error)
       } else {
-        router.push("/dashboard/user")
+        if (result.user.role === "ADMIN") {
+          router.push("/dashboard/admin")
+        } else {
+          router.push("/dashboard/user")
+        }
       }
-    } else {
-      setError("Invalid email or password")
+    } catch (err) {
+      setError("An error occurred during login")
     }
   }
 
