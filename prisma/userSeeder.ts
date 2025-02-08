@@ -8,28 +8,28 @@ async function main() {
   const userPassword = await hash("userpassword", 10)
 
   const admin = await prisma.user.upsert({
-    where: { email: "admin@admin.com" },
+    where: { email: "admin@example.com" },
     update: {},
     create: {
-      name: "Admin User",
-      email: "admin@admin.com",
+      name: "Book Mangement Admin",
+      email: "admin@example2.com",
       password: adminPassword,
       role: Role.ADMIN,
       bio: "Library administrator",
-      avatar: "https://example.com/avatars/admin.jpg",
+      avatar: null,
     },
   })
 
   const user = await prisma.user.upsert({
-    where: { email: "user1@gmail.com" },
+    where: { email: "user@example2.com" },
     update: {},
     create: {
-      name: "Regular User",
-      email: "user1@gmail.com",
+      name: "Andrew Thomas",
+      email: "user@example.com",
       password: userPassword,
       role: Role.USER,
       bio: "Avid reader and book enthusiast",
-      avatar: "https://example.com/avatars/user1.jpg",
+      avatar: null,
     },
   })
 
@@ -44,4 +44,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect()
   })
-

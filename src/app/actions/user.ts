@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers"
 import { prisma } from "@/app/lib/prisma"
-import { writeFile } from "fs/promises"
+import { writeFile, mkdir } from "fs/promises"
 import path from "path"
 
 export async function updateUserProfile(formData: FormData) {
@@ -21,9 +21,25 @@ export async function updateUserProfile(formData: FormData) {
       const bytes = await avatarFile.arrayBuffer()
       const buffer = Buffer.from(bytes)
       const fileName = `${Date.now()}-${avatarFile.name}`
-      const filePath = path.join(process.cwd(), "public", "uploads", fileName)
-      await writeFile(filePath, buffer)
-      avatarPath = `/uploads/${fileName}`
+      const uploadsDir = path.join(process.cwd(), "public", "uploads")
+      const filePath = path.join(uploadsDir, fileName)
+
+      // Create the uploads directory if it doesn't exist
+      try {
+        await mkdir(uploadsDir, { recursive: true })
+      } catch (err) {
+        console.error("Error creating uploads directory:", err)
+        return { error: "Failed to create uploads directory" }
+      }
+
+      // Write the file
+      try {
+        await writeFile(filePath, buffer)
+        avatarPath = `/uploads/${fileName}`
+      } catch (err) {
+        console.error("Error writing file:", err)
+        return { error: "Failed to save avatar file" }
+      }
     }
 
     const updatedUser = await prisma.user.update({
@@ -49,3 +65,4 @@ export async function updateUserProfile(formData: FormData) {
     return { error: "Failed to update profile" }
   }
 }
+
