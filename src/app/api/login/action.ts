@@ -21,7 +21,7 @@ export async function login(email: string, password: string) {
 
   // Set the session cookie
   const cookieStore = await cookies()
-  cookieStore.set("session", user.id, {
+   cookieStore.set("session", user.id, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
@@ -35,18 +35,19 @@ export async function login(email: string, password: string) {
       email: user.email,
       role: user.role,
       name: user.name,
-      avatar: user.avatar,
-      bio: user.bio,
     },
   }
 }
-
-export async function logout() {
-  const cookieStore = await cookies()
-  cookieStore.delete("session")
-  localStorage.removeItem("user")
+  export const LogOut = async () => {
+    const cookieStore = await cookies()
+     cookieStore.set("session", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: -1,
+     })
 }
-
+  
 export async function getUser() {
   const cookieStore = await cookies()
   const sessionId = cookieStore.get("session")?.value
@@ -69,4 +70,3 @@ export async function getUser() {
 
   return user
 }
-
