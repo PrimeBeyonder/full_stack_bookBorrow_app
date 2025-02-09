@@ -4,27 +4,45 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { getUser,logout  } from "@/app/api/login/action"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
+import { getUser } from "@/app/api/login/action"
+import { useToast } from "@/hooks/use-toast"
+import Link from "next/link"
+import { UserStats } from "@/app/components/dashboard/UserStats"
+import { BorrowedBooks } from "@/app/components/dashboard/BorrowedBook"
+import { Wishlist } from "@/app/components/dashboard/WishList"
 
-export default function UserDashboard() {
+export default function UserProfilePage() {
   interface User {
     name: string | null;
-    id: string;
     email: string;
     bio: string | null;
+    id: string;
     avatar: string | null;
     role: Role;
   }
   
   const [user, setUser] = useState<User | null>(null)
+
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    bio: "",
+  })
   const router = useRouter()
+  const { toast } = useToast()
 
   useEffect(() => {
     const fetchUser = async () => {
       const userData = await getUser()
       if (userData) {
         setUser(userData)
+        setFormData({
+          name: userData.name || "",
+          email: userData.email,
+          bio: userData.bio || "",
+        })
       } else {
         router.push("/login")
       }
@@ -33,11 +51,6 @@ export default function UserDashboard() {
     fetchUser()
   }, [router])
 
-  const handleLogout = async () => {
-    await logout()
-    localStorage.removeItem("user")
-    router.push("/login")
-  }
 
   if (!user) {
     return <div>Loading...</div>
@@ -45,44 +58,52 @@ export default function UserDashboard() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <Card className="w-full max-w-3xl mx-auto">
+      <div className="grid gap-8">
+        <Card>
         <CardHeader>
-          <CardTitle className="text-3xl font-bold">Your Profile</CardTitle>
+          <CardTitle>User Profile</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-6">
-            {/* <Image
-              src={user.avatar || "/placeholder.svg"}
-              alt={user.name || "User avatar"}
-              width={120}
-              height={120}
-              className="rounded-full"
-            /> */}
-            <div className="flex-1 text-center md:text-left">
-              <h2 className="text-2xl font-semibold mb-2">{user.name}</h2>
-              <p className="text-gray-600 mb-4">{user.email}</p>
-              <p className="text-gray-800 mb-4 max-w-md">{user.bio || "No bio available"}</p>
-              <div className="flex justify-center md:justify-start space-x-4">
-                <div className="text-center">
-                  <span className="text-2xl font-bold">0</span>
-                  <p className="text-gray-600">Books Read</p>
-                </div>
-                <div className="text-center">
-                  <span className="text-2xl font-bold">0</span>
-                  <p className="text-gray-600">Reviews</p>
-                </div>
-                <div className="text-center">
-                  <span className="text-2xl font-bold">0</span>
-                  <p className="text-gray-600">Wishlist</p>
-                </div>
+          <div className="flex items-center space-x-4">
+            <Image
+              src={user.avatar || "/user_avatar.jpg"}
+              alt={user.name || "User Avatar"}
+              width={100}
+              height={100}
+              className="rounded-full border-4 border-blue-500"
+            />
+            <div className="flex justify-between flex-1">
+              <div>
+                <h2 className="text-2xl font-bold">{user.name}</h2>
+                <p className="text-muted-foreground">{user.email}</p>
               </div>
-              <Button onClick={handleLogout} className="mt-4">
-                Logout
-              </Button>
+              <div>
+                <Link href="/dashboard/user/profile/edit">
+                  <Button variant="outline" className=" text-blue-700">Edit Profile</Button>
+                </Link>
+              </div>
             </div>
           </div>
         </CardContent>
-      </Card>
+        </Card>
+
+                {/* Stats Section */}
+        <UserStats />
+
+        {/* Books and Wishlist Tabs */}
+        <Tabs defaultValue="borrowed" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="borrowed">Borrowed Books</TabsTrigger>
+            <TabsTrigger value="wishlist">Wishlist</TabsTrigger>
+          </TabsList>
+          <TabsContent value="borrowed">
+            <BorrowedBooks books={[]} />
+          </TabsContent>
+          <TabsContent value="wishlist">
+            <Wishlist books={[]} />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   )
 }

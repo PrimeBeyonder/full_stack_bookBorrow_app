@@ -6,19 +6,18 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { login } from "@/app/api/login/action"
-import { toast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks/use-toast"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
   const router = useRouter()
+  const { toast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError("")
 
-     try {
+    try {
       const result = await login(email, password)
       if (result.error) {
         toast({
@@ -27,20 +26,22 @@ export default function LoginPage() {
           variant: "destructive",
         })
       } else {
-        // Store user info in localStorage
+        // Store user info in localStorage on the client-side
         localStorage.setItem("user", JSON.stringify(result.user))
 
-        // Explicitly check the role and redirect
+        // Redirect based on user role
         if (result.user && result.user.role === "ADMIN") {
           router.push("/dashboard/admin")
-          router.refresh() // Force a refresh to ensure middleware runs
         } else {
           router.push("/dashboard/user")
-          router.refresh() // Force a refresh to ensure middleware runs
         }
       }
     } catch (err) {
-      setError("An error occurred during login")
+      toast({
+        title: "Error",
+        description: "An error occurred during login",
+        variant: "destructive",
+      })
     }
   }
 
@@ -70,7 +71,6 @@ export default function LoginPage() {
                 required
               />
             </div>
-            {error && <p className="text-red-500 text-sm">{error}</p>}
             <Button type="submit" className="w-full">
               Log In
             </Button>
