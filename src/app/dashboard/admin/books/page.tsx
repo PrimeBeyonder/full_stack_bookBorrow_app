@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -35,7 +34,7 @@ interface Book {
   coverImage?: string
 }
 
-interface BookFormData extends Omit<Book, "id" | "genres"> {
+interface BookFormData extends Omit<Book, "genres"> {
   genreIds: string[]
 }
 
@@ -47,6 +46,7 @@ export default function BooksPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [bookForm, setBookForm] = useState<BookFormData>({
+    id: "",
     title: "",
     author: "",
     isbn: "",
@@ -60,8 +60,8 @@ export default function BooksPage() {
     totalCopies: 0,
   })
   const [file, setFile] = useState<File | null>(null)
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null)
   const { toast } = useToast()
-  const router = useRouter()
 
   useEffect(() => {
     fetchBooks()
@@ -75,7 +75,7 @@ export default function BooksPage() {
       const data = await response.json()
       setBooks(data)
       setIsLoading(false)
-    } catch (error) {
+    } catch {
       setError("Failed to fetch books. Please try again.")
       setIsLoading(false)
     }
@@ -87,8 +87,9 @@ export default function BooksPage() {
       if (!response.ok) throw new Error("Failed to fetch genres")
       const data = await response.json()
       setGenres(data)
-    } catch (error) {
+    } catch {
       setError("Failed to fetch genres. Please try again.")
+      setIsLoading(false)
     }
   }
 
@@ -106,7 +107,11 @@ export default function BooksPage() {
       setFile(e.target.files[0])
     }
   }
-
+const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  if (e.target.files) {
+    setCoverImageFile(e.target.files[0])
+  }
+}
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const formData = new FormData()
@@ -120,6 +125,10 @@ export default function BooksPage() {
     if (file) {
       formData.append("ebookFile", file)
     }
+    if (coverImageFile) {
+      formData.append("coverImage", coverImageFile)
+    }
+
 
     try {
       const url = isEditing ? `/api/books/${bookForm.id}` : "/api/books"
@@ -129,26 +138,28 @@ export default function BooksPage() {
 
       await fetchBooks()
       setBookForm({
-        title: "",
-        author: "",
-        isbn: "",
-        publicationYear: new Date().getFullYear(),
-        publisher: "",
-        description: "",
-        genreIds: [],
-        language: "",
-        pageCount: 0,
-        availableCopies: 0,
-        totalCopies: 0,
-      })
+              id: "",
+              title: "",
+              author: "",
+              isbn: "",
+              publicationYear: new Date().getFullYear(),
+              publisher: "",
+              description: "",
+              genreIds: [],
+              language: "",
+              pageCount: 0,
+              availableCopies: 0,
+              totalCopies: 0,
+            })
       setFile(null)
+      setCoverImageFile(null)
       setIsEditing(false)
       setIsDialogOpen(false)
       toast({
         title: "Success",
         description: `Book ${isEditing ? "updated" : "added"} successfully.`,
       })
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: `Failed to ${isEditing ? "update" : "add"} book. Please try again.`,
@@ -175,7 +186,7 @@ export default function BooksPage() {
         title: "Success",
         description: "Book deleted successfully.",
       })
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to delete book. Please try again.",
@@ -186,19 +197,21 @@ export default function BooksPage() {
 
   const openAddDialog = () => {
     setBookForm({
-      title: "",
-      author: "",
-      isbn: "",
-      publicationYear: new Date().getFullYear(),
-      publisher: "",
-      description: "",
-      genreIds: [],
-      language: "",
-      pageCount: 0,
-      availableCopies: 0,
-      totalCopies: 0,
-    })
+          id: "",
+          title: "",
+          author: "",
+          isbn: "",
+          publicationYear: new Date().getFullYear(),
+          publisher: "",
+          description: "",
+          genreIds: [],
+          language: "",
+          pageCount: 0,
+          availableCopies: 0,
+          totalCopies: 0,
+        })
     setFile(null)
+    setCoverImageFile(null)
     setIsEditing(false)
     setIsDialogOpen(true)
   }
@@ -311,6 +324,15 @@ export default function BooksPage() {
               <Label htmlFor="ebookFile">eBook File</Label>
               <Input id="ebookFile" name="ebookFile" type="file" onChange={handleFileChange} />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="coverImage">Cover Image</Label>
+              <Input
+                id="coverImage"
+                name="coverImage"
+                type="file"
+                onChange={handleCoverImageChange}
+              />
+            </div>
             <Button type="submit">{isEditing ? "Update Book" : "Add Book"}</Button>
           </form>
         </DialogContent>
@@ -354,7 +376,7 @@ export default function BooksPage() {
               <Button variant="destructive" size="sm" onClick={() => handleDelete(book.id)}>
                 Delete
               </Button>
-              <Link href={`/dashboard/books/${book.id}`} passHref>
+              <Link href={`/dashboard/admin/books/${book.id}`} passHref>
                 <Button variant="link" size="sm">
                   View Details
                 </Button>
@@ -366,4 +388,3 @@ export default function BooksPage() {
     </div>
   )
 }
-
