@@ -35,6 +35,16 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       ebookFilePath = `/ebooks/${fileName}`
     }
 
+    let coverImagePath = bookData.coverImage as string
+    const coverImage = formData.get("coverImage") as File | null
+    if (coverImage) {
+      const bytes = await coverImage.arrayBuffer()
+      const buffer = Buffer.from(bytes)
+      const fileName = `${Date.now()}-${coverImage.name}`
+      const filePath = path.join(process.cwd(), "public", "covers", fileName)
+      await writeFile(filePath, buffer)
+      coverImagePath = `/covers/${fileName}`
+    }
     const genreIds = formData.getAll("genreIds") as string[]
 
     const book = await prisma.book.update({
@@ -51,6 +61,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         availableCopies: Number(bookData.availableCopies),
         totalCopies: Number(bookData.totalCopies),
         ebookFile: ebookFilePath,
+        coverImage: coverImagePath,
         genres: {
           set: genreIds.map((id) => ({ id })),
         },
