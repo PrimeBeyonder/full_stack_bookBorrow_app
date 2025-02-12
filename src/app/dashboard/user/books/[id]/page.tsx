@@ -33,63 +33,56 @@ export default function BookDetailsPage() {
   const params = useParams()
   const { toast } = useToast()
 
-  useEffect(() => {
-    const fetchBook = async () => {
-      try {
-        const response = await fetch(`/api/books/${params.id}`)
-        if (!response.ok) throw new Error("Failed to fetch book")
-        const data = await response.json()
-        setBook(data)
-        // Check if current user has wishlisted this book
-        const user = JSON.parse(localStorage.getItem("user") || "{}")
-        setIsWishlisted(data.wishlistItems.some((w: any) => w.userId === user.id))
-      } catch (error) {
-        console.error("Error fetching book:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    if (params.id) {
-      fetchBook()
-    }
-  }, [params.id])
-
-const addToWishlist = async () => {
-    setIsLoading(true)
+useEffect(() => {
+  const fetchBook = async () => {
     try {
-      const response = await fetch(`/api/wishList`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ bookId: id }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        toast({
-          title: "Error",
-          description: errorData.error,
-          variant: "destructive",
-        })
-        return
-      }
-
-      toast({
-        title: "Success",
-        description: "Book added to wishlist",
-      })
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to add book to wishlist",
-        variant: "destructive",
-      })
+      const response = await fetch(`/api/books/${params.id}`)
+      if (!response.ok) throw new Error("Failed to fetch book")
+      const data = await response.json()
+      setBook(data)
+      
+      // Get user from localStorage
+      const user = JSON.parse(localStorage.getItem("user") || "{}")
+      // Check if book is in user's wishlist
+      setIsWishlisted(data.wishlistItems?.some((w: any) => w.userId === user.id) || false)
+    } catch (error) {
+      console.error("Error fetching book:", error)
     } finally {
       setIsLoading(false)
     }
   }
+
+  if (params.id) {
+    fetchBook()
+  }
+}, [params.id])
+
+const handleWishlist = async () => {
+  try {
+    const response = await fetch(`/api/wishlist/${book?.id}`, {
+      method: isWishlisted ? "DELETE" : "POST",
+      headers: { "Content-Type": "application/json" },
+      ...((!isWishlisted && {
+        body: JSON.stringify({ bookId: book?.id })
+      }))
+    })
+    console.log(response);
+
+    if (!response.ok) throw new Error()
+
+    setIsWishlisted(!isWishlisted)
+    toast({
+      title: isWishlisted ? "Removed from wishlist" : "Added to wishlist",
+      description: `${book?.title} has been ${isWishlisted ? "removed from" : "added to"} your wishlist`,
+    })
+  } catch  {
+    toast({
+      title: "Error",
+      description: "Failed to update wishlist",
+      variant: "destructive",
+    })
+  }
+}
 
   if (isLoading) {
     return <div className="text-center py-10">Loading book details...</div>
@@ -143,7 +136,7 @@ const addToWishlist = async () => {
             </div>
             <div className="flex gap-4">
               <Button className="flex-1">Borrow Book</Button>
-              <Button variant={isWishlisted ? "default" : "outline"} className="flex-1" onClick={addToWishlist}>
+              <Button variant={isWishlisted ? "default" : "outline"} className="flex-1" onClick={handleWishlist}>
                 <Heart className={`mr-2 h-4 w-4 ${isWishlisted ? "fill-current" : ""}`} />
                 {isWishlisted ? "Wishlisted" : "Add to Wishlist"}
               </Button>
