@@ -7,7 +7,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
   try {
     const book = await prisma.book.findUnique({
       where: { id: params.id },
-      include: { genres: true },
+      include: { genres: true, wishlistItems: true },
     })
     if (!book) {
       return NextResponse.json({ error: "Book not found" }, { status: 404 })
