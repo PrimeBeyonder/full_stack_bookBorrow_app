@@ -40,11 +40,11 @@ useEffect(() => {
       if (!response.ok) throw new Error("Failed to fetch book")
       const data = await response.json()
       setBook(data)
-      
-      // Get user from localStorage
+
+      // Fetch latest user from localStorage
       const user = JSON.parse(localStorage.getItem("user") || "{}")
-      // Check if book is in user's wishlist
-      setIsWishlisted(data.wishlistItems?.some((w: any) => w.userId === user.id) || false)
+
+      setIsWishlisted(Array.isArray(data.wishlistItems) && data.wishlistItems.some((w: any) => w.userId === user.id))
     } catch (error) {
       console.error("Error fetching book:", error)
     } finally {
@@ -55,7 +55,8 @@ useEffect(() => {
   if (params.id) {
     fetchBook()
   }
-}, [params.id])
+}, [params.id]) // Keep dependencies minimal to avoid unnecessary re-fetching
+
 
 const handleWishlist = async () => {
   try {
