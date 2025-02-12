@@ -2,8 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/app/lib/prisma"
 import { getUser } from "../login/action"
 
-// Get user's wishlist
-export async function GET() {
+export async function GET(request: NextRequest) {
   const user = await getUser()
 
   if (!user) {
@@ -11,23 +10,18 @@ export async function GET() {
   }
 
   try {
-    const wishlist = await prisma.book.findMany({
-      where: {
-        wishlistItems: {
-          some: {
-            userId: user.id,
-          },
-        },
-      },
+    const wishlistItems = await prisma.wishlistItem.findMany({
+      where: { userId: user.id },
       include: {
-        genres: true,
-        _count: {
-          select: {
-            wishlistItems: true,
+        book: {
+          include: {
+            genres: true,
           },
         },
       },
     })
+
+    const wishlist = wishlistItems.map((item) => item.book)
 
     return NextResponse.json(wishlist)
   } catch (error) {
@@ -36,4 +30,30 @@ export async function GET() {
   }
 }
 
-// Add book to wishlist
+export async function POST(request: NextRequest) {
+  const user = await getUser()
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  try {
+    const { bookId } = await request.json()
+
+    const wishlistItem = await prisma.wishlistItem.create({
+      data: {
+        userId: user.id,
+        bookId: bookId,
+      },
+      include: {
+        book: true,
+      },
+    })
+
+    return NextResponse.json(wishlistItem.book)
+  } catch (error) {
+    console.error("Error adding to wishlist:", error)
+    return NextResponse.json({ error: "Failed to add to wishlist" }, { status: 500 })
+  }
+}
+
