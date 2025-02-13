@@ -32,6 +32,13 @@ interface Book {
   totalCopies: number
   ebookFile?: string
   coverImage?: string
+  borrowings?: {
+    id: string
+    status: "BORROWED" | "RETURNED" | "OVERDUE"
+    user: {
+      name: string
+    }
+  }[]
 }
 
 interface BookFormData extends Omit<Book, "genres"> {
@@ -70,7 +77,7 @@ export default function BooksPage() {
 
   const fetchBooks = async () => {
     try {
-      const response = await fetch("/api/books")
+      const response = await fetch("/api/books?include=borrowings")
       if (!response.ok) throw new Error("Failed to fetch books")
       const data = await response.json()
       setBooks(data)
@@ -367,6 +374,12 @@ const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               <div className="mt-2">
                 <p className="font-semibold">Genres:</p>
                 <p className="text-muted-foreground line-clamp-1">{book.genres.map((g) => g.name).join(", ")}</p>
+              </div>
+               <div className="mt-2">
+                <p className="font-semibold">Current Borrowings:</p>
+                <p className="text-muted-foreground">
+                  {book.borrowings?.filter((b) => b.status === "BORROWED").length || 0}
+                </p>
               </div>
             </CardContent>
             <CardFooter className="flex justify-between">
