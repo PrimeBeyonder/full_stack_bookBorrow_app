@@ -24,6 +24,16 @@ interface Book {
   totalCopies: number
   ebookFile?: string
   coverImage?: string
+  borrowings: {
+    id: string
+    status: "BORROWED" | "RETURNED" | "OVERDUE"
+    user: {
+      name: string
+    }
+    borrowDate: string
+    dueDate: string
+    returnDate?: string
+  }[]
 }
 
 export default function BookDetailPage() {
@@ -43,7 +53,7 @@ export default function BookDetailPage() {
         const data = await response.json()
         setBook(data)
         setIsLoading(false)
-      } catch (error) {
+      } catch {
         setError("Failed to fetch book. Please try again.")
         setIsLoading(false)
       }
@@ -148,20 +158,6 @@ export default function BookDetailPage() {
                 <p className="text-muted-foreground">{book.description}</p>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button variant="outline" onClick={handleWishlist}>
-                <Heart className={`mr-2 h-4 w-4 ${isWishlisted ? "fill-current text-red-500" : ""}`} />
-                {isWishlisted ? "Wishlisted" : "Add to Wishlist"}
-              </Button>
-              <Button onClick={handleBorrow}>
-                <BookOpen className="mr-2 h-4 w-4" />
-                Borrow
-              </Button>
-              <Button variant="outline" onClick={handleShare}>
-                <Share2 className="mr-2 h-4 w-4" />
-                Share
-              </Button>
-            </CardFooter>
           </div>
         </div>
       </Card>
