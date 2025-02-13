@@ -18,7 +18,7 @@ export async function GET(request: Request) {
   try {
     const books = await prisma.book.findMany({
       where,
-      include: { genres: true },
+      include: { genres: true, borrowings: true },
     })
     return NextResponse.json(books)
   } catch (error) {

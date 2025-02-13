@@ -5,9 +5,10 @@ import path from "path"
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
+    const id = await params.id;
     const book = await prisma.book.findUnique({
-      where: { id: params.id },
-      include: { genres: true, wishlistItems: true },
+      where: { id: id },
+      include: { genres: true, wishlistItems: true, borrowings: true },
     })
     if (!book) {
       return NextResponse.json({ error: "Book not found" }, { status: 404 })
