@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import { motion } from "framer-motion"
 import { Card } from "@/components/ui/card"
@@ -30,21 +30,24 @@ export default function BookDetailsPage() {
   const [book, setBook] = useState<Book | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isWishlisted, setIsWishlisted] = useState(false)
+  const [isBorrowing, setIsBorrowing] = useState(false)
   const params = useParams()
+  const router = useRouter()
   const { toast } = useToast()
 
-useEffect(() => {
+  useEffect(() => {
+    fetchBook()
+  }, []) // Removed params.id from dependencies
+
   const fetchBook = async () => {
     try {
       const response = await fetch(`/api/books/${params.id}`)
       if (!response.ok) throw new Error("Failed to fetch book")
       const data = await response.json()
       setBook(data)
-
-      // Fetch latest user from localStorage
+      // Check if current user has wishlisted this book
       const user = JSON.parse(localStorage.getItem("user") || "{}")
-
-      setIsWishlisted(Array.isArray(data.wishlistItems) && data.wishlistItems.some((w: any) => w.userId === user.id))
+      setIsWishlisted(data.wishlistItems.some((w: any) => w.userId === user.id))
     } catch (error) {
       console.error("Error fetching book:", error)
     } finally {
@@ -52,38 +55,70 @@ useEffect(() => {
     }
   }
 
-  if (params.id) {
-    fetchBook()
+  const handleWishlist = async () => {
+    try {
+      const response = await fetch(`/api/wishlist/${book?.id}`, {
+        method: isWishlisted ? "DELETE" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookId: book?.id }),
+      })
+
+      if (!response.ok) throw new Error()
+
+      setIsWishlisted(!isWishlisted)
+      toast({
+        title: isWishlisted ? "Removed from wishlist" : "Added to wishlist",
+        description: `${book?.title} has been ${isWishlisted ? "removed from" : "added to"} your wishlist`,
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update wishlist",
+        variant: "destructive",
+      })
+    }
   }
-}, [params.id]) // Keep dependencies minimal to avoid unnecessary re-fetching
 
+  const handleBorrow = async () => {
+    if (!book) return
 
-const handleWishlist = async () => {
-  try {
-    const response = await fetch(`/api/wishlist/${book?.id}`, {
-      method: isWishlisted ? "DELETE" : "POST",
-      headers: { "Content-Type": "application/json" },
-      ...((!isWishlisted && {
-        body: JSON.stringify({ bookId: book?.id })
-      }))
-    })
-    console.log(response);
+    setIsBorrowing(true)
+    try {
+      const dueDate = new Date()
+      dueDate.setDate(dueDate.getDate() + 4) // Set due date to 4 days from now
 
-    if (!response.ok) throw new Error()
+      const response = await fetch("/api/borrowings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookId: book.id,
+          dueDate: dueDate.toISOString(),
+        }),
+      })
 
-    setIsWishlisted(!isWishlisted)
-    toast({
-      title: isWishlisted ? "Removed from wishlist" : "Added to wishlist",
-      description: `${book?.title} has been ${isWishlisted ? "removed from" : "added to"} your wishlist`,
-    })
-  } catch  {
-    toast({
-      title: "Error",
-      description: "Failed to update wishlist",
-      variant: "destructive",
-    })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to borrow book")
+      }
+
+      toast({
+        title: "Book Borrowed",
+        description: `You have successfully borrowed ${book.title}. It is due on ${dueDate.toLocaleDateString()}.`,
+      })
+
+      // Refresh book data to update available copies
+      await fetchBook()
+    } catch (error) {
+      console.error("Error borrowing book:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to borrow book. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsBorrowing(false)
+    }
   }
-}
 
   if (isLoading) {
     return <div className="text-center py-10">Loading book details...</div>
@@ -136,7 +171,9 @@ const handleWishlist = async () => {
               </p>
             </div>
             <div className="flex gap-4">
-              <Button className="flex-1">Borrow Book</Button>
+              <Button className="flex-1" onClick={handleBorrow} disabled={book.availableCopies === 0 || isBorrowing}>
+                {isBorrowing ? "Borrowing..." : "Borrow Book"}
+              </Button>
               <Button variant={isWishlisted ? "default" : "outline"} className="flex-1" onClick={handleWishlist}>
                 <Heart className={`mr-2 h-4 w-4 ${isWishlisted ? "fill-current" : ""}`} />
                 {isWishlisted ? "Wishlisted" : "Add to Wishlist"}
