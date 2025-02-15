@@ -4,9 +4,8 @@ import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Heart, BookOpen, Share2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 interface Book {
@@ -64,28 +63,6 @@ export default function BookDetailPage() {
     }
   }, [params.id])
 
-  const handleWishlist = () => {
-    setIsWishlisted(!isWishlisted)
-    toast({
-      title: isWishlisted ? "Removed from Wishlist" : "Added to Wishlist",
-      description: `${book?.title} has been ${isWishlisted ? "removed from" : "added to"} your wishlist.`,
-    })
-  }
-
-  const handleBorrow = () => {
-    toast({
-      title: "Borrow Request Sent",
-      description: `Your request to borrow ${book?.title} has been sent.`,
-    })
-  }
-
-  const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href)
-    toast({
-      title: "Link Copied",
-      description: "The link to this book has been copied to your clipboard.",
-    })
-  }
 
   if (isLoading) return <div>Loading...</div>
   if (error) return <div>Error: {error}</div>
