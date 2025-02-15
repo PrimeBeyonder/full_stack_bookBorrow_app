@@ -1,7 +1,14 @@
-import type { NextConfig } from "next";
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  reactStrictMode: true,
+  webpack: (config) => {
+    // Required for react-pdf
+    config.resolve.alias.canvas = false
+    config.resolve.alias.encoding = false
 
-const nextConfig: NextConfig = {
-  /* config options here */
-};
+    return config
+  },
+}
 
-export default nextConfig;
+module.exports = nextConfig
+
