@@ -11,7 +11,11 @@ interface Book {
   dueDate: string
 }
 
-export function BorrowedBooks({ books = [] }: { books: Book[] }) {
+interface BorrowedBooksProps {
+  books: Book[]
+}
+
+export function BorrowedBooks({ books }: BorrowedBooksProps) {
   return (
     <Card>
       <CardHeader>

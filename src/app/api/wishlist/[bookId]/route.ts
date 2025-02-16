@@ -36,7 +36,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { bookI
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const bookId = params.bookId
+  const bookId = await params.bookId
 
   try {
     await prisma.wishlistItem.delete({

@@ -1,7 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Book, BookMarked, Star } from "lucide-react"
 
-export function UserStats({ borrowedCount = 0, wishlistCount = 0, reviewCount = 0 }) {
+interface UserStatsProps {
+  borrowedCount: number
+  wishlistCount: number
+  reviewCount: number
+}
+
+export function UserStats({ borrowedCount, wishlistCount, reviewCount }: UserStatsProps) {
   const stats = [
     {
       title: "Books Borrowed",
@@ -36,3 +42,4 @@ export function UserStats({ borrowedCount = 0, wishlistCount = 0, reviewCount = 
     </div>
   )
 }
+
