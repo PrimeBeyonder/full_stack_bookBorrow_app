@@ -30,14 +30,9 @@ export default function UserProfilePage() {
     author: string;
     coverImage: string;
   }
-  type UserStats = {
-  borrowedCount?: number
-  wishlistCount?: number
-}
+
   const [user, setUser] = useState<User | null>(null)
   const [wishlist, setWishlist] = useState<Book[]>([])
-  const [borrowedBooks, setBorrowedBooks] = useState<Book[]>([])
-  const [userStats, setUserStats] = useState<UserStats | null>(null)
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -51,76 +46,25 @@ export default function UserProfilePage() {
     const fetchUserData = async () => {
       const userData = await getUser()
       if (userData) {
-        setUser(userData as User)
+        setUser(userData)
         setFormData({
           name: userData.name || "",
           email: userData.email,
           bio: userData.bio || "",
         })
         fetchWishlist(userData.id) // Fetch wishlist after setting user
-        fetchBorrowedBooks(userData.id)
-        fetchUserStats()
       } else {
         router.push("/login")
       }
     }
 
-    const fetchUserStats = async () => {
-      try {
-        const response = await fetch(`/api/user-status`)
-        if (!response.ok) throw new Error("Failed to fetch user stats")
-
-        const data = await response.json()
-        console.log("API Response:", data) // Debugging
-        const formattedData = {
-          borrowedCount: data.borrowedBooks,
-          wishlistCount: data.wishListCount,
-        }
-        console.log("Formatted Data:", formattedData) // Debugging
-        setUserStats(formattedData);
-      } catch (error) {
-        console.error("Error fetching user stats:", error)
-        toast({
-          title: "Error",
-          description: "Failed to load user stats",
-          variant: "destructive",
-        })
-      }
-    }
-    const fetchBorrowedBooks = async (userId: string) => {
-      try {
-        const response = await fetch(`/api/books?userId=${userId}`)
-        if (!response.ok) throw new Error("Failed to fetch borrowed books")
-
-        const data = await response.json()
-        if (!Array.isArray(data)) {
-          console.error("Unexpected response structure:", data)
-          return
-        }
-
-        // Map API response to match expected structure
-        const formattedBooks = data.map((book: Book) => ({
-          id: book.id,
-          title: book.title,
-          author: book.author,
-          coverImage: book.coverImage || "/placeholder.svg",
-        }));
-        setBorrowedBooks(formattedBooks);
-      } catch (error) {
-    console.error("Error fetching wishlist:", error);
-    toast({
-      title: "Error",
-      description: "Failed to load wishlist",
-      variant: "destructive",
-    });
-  }
-  }
 const fetchWishlist = async (userId: string) => {
   try {
     const response = await fetch(`/api/wishlist?userId=${userId}`);
     if (!response.ok) throw new Error("Failed to fetch wishlist");
 
     const data = await response.json();
+    console.log("API Response:", data); // Debugging
 
     if (!Array.isArray(data)) {
       console.error("Unexpected response structure:", data);
@@ -135,6 +79,8 @@ const fetchWishlist = async (userId: string) => {
       coverImage: book.coverImage || "/placeholder.svg",
       availableCopies: book.availableCopies ?? 0, // Ensure a valid number
     }));
+
+    console.log("Formatted Books:", formattedBooks); // Debugging
     setWishlist(formattedBooks);
   } catch (error) {
     console.error("Error fetching wishlist:", error);
@@ -145,6 +91,8 @@ const fetchWishlist = async (userId: string) => {
     });
   }
 };
+
+
     fetchUserData()
   }, [router, toast])
 
@@ -184,11 +132,7 @@ const fetchWishlist = async (userId: string) => {
         </Card>
 
         {/* Stats Section */}
-        <UserStats
-          borrowedCount={userStats?.borrowedCount ?? 0}
-          wishlistCount={userStats?.wishlistCount ?? 0}
-          reviewCount={0}
-        />
+        <UserStats />
 
         {/* Books and Wishlist Tabs */}
         <Tabs defaultValue="borrowed" className="w-full">
@@ -197,7 +141,7 @@ const fetchWishlist = async (userId: string) => {
             <TabsTrigger value="wishlist">Wishlist</TabsTrigger>
           </TabsList>
           <TabsContent value="borrowed">
-            <BorrowedBooks books={borrowedBooks} />
+            <BorrowedBooks books={[]} />
           </TabsContent>
           <TabsContent value="wishlist">
             <Wishlist books={wishlist} />
