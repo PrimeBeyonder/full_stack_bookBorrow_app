@@ -6,6 +6,15 @@ import { compare } from "bcryptjs"
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
+  session: {
+    strategy: "jwt",
+  },
+  pages: {
+    signIn: "auth/login",
+    signUp: "auth/signup",
+    verifyRequest: "auth/verify-email",
+    error: "/auth/error",
+  },
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -22,7 +31,7 @@ export const authOptions: NextAuthOptions = {
           where: { email: credentials.email },
         })
 
-        if (!user) {
+        if (!user || !user.password) {
           return null
         }
 
@@ -36,15 +45,24 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.name,
+          role: user.role,
         }
       },
     }),
   ],
-  session: {
-    strategy: "jwt",
-  },
-  pages: {
-    signIn: "/signin",
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.role = user.role
+      }
+      return token
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.role = token.role as string
+      }
+      return session
+    },
   },
 }
 
