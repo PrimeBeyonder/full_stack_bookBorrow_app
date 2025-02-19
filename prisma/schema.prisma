@@ -11,20 +11,20 @@ datasource db {
 }
 
 model User {
-  id                String         @id @default(cuid())
-  email             String         @unique
-  name              String?
-  password          String
-  bio               String?
-  avatar            String?
-  role              Role           @default(USER)
-  borrowings        Borrowing[]
-  reviews           Review[]
-  wishlist          WishlistItem[]
-  emailVerified     DateTime?
-  verificationToken DateTime?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  id                  String               @id @default(cuid())
+  email               String               @unique
+  name                String?
+  password            String
+  bio                 String?
+  avatar              String?
+  role                Role                 @default(USER)
+  borrowings          Borrowing[]
+  reviews             Review[]
+  wishlist            WishlistItem[]
+  passwordResetTokens PasswordResetToken[]
+  emailVerified       Boolean              @default(false)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 }
 
 model Book {
@@ -101,4 +101,23 @@ enum BorrowStatus {
   BORROWED
   RETURNED
   OVERDUE
+}
+
+model VerificationToken {
+  id         String   @id @default(cuid())
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model PasswordResetToken {
+  id      String   @id @default(cuid())
+  userId  String
+  token   String   @unique
+  expires DateTime
+  user    User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, token])
 }
