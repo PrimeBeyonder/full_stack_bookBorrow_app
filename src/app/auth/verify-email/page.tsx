@@ -38,7 +38,7 @@ export default function VerifyEmailPage() {
           title: "Success",
           description: "Email verified successfully. You can now log in.",
         })
-        router.push("/login")
+        router.push("auth/login")
       } else {
         const data = await response.json()
         throw new Error(data.error || "Verification failed")
