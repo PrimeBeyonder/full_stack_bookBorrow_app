@@ -23,7 +23,7 @@ export function Header() {
   const handleLogout = async () => {
     await LogOut()
     localStorage.removeItem("user")
-    router.push("/login")
+    router.push("auth/login")
   }
 
   return (

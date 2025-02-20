@@ -25,7 +25,7 @@ export default function EditProfilePage() {
       if (userData) {
         setUser(userData)
       } else {
-        router.push("/login")
+        router.push("auth/login")
       }
     }
 
