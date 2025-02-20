@@ -105,7 +105,7 @@ export async function sendVerificationEmail(email: string, token: string) {
 }
 
 export async function sendPasswordResetEmail(email: string, token: string) {
-  const resetUrl = `${nextAuthUrl}/reset-password?token=${token}`
+  const resetUrl = `${nextAuthUrl}/password-reset?token=${token}`
 
   const content = `
     <h1>Reset Your BookBorrow Password</h1>
