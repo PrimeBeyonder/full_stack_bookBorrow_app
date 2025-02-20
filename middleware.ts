@@ -6,7 +6,7 @@ export async function middleware(request: NextRequest) {
   const session = request.cookies.get("session")
 
   if (!session) {
-    return NextResponse.redirect(new URL("/login", request.url))
+    return NextResponse.redirect(new URL("auth/login", request.url))
   }
 
   // Get the user from the database using the session ID
@@ -16,7 +16,7 @@ export async function middleware(request: NextRequest) {
   })
 
   if (!user) {
-    return NextResponse.redirect(new URL("/login", request.url))
+    return NextResponse.redirect(new URL("auth/login", request.url))
   }
 
   // Check if trying to access admin routes
