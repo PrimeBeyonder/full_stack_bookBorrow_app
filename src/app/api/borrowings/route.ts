@@ -1,8 +1,8 @@
-import { type NextRequest, NextResponse } from "next/server";
+import {  NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { getUser } from "../login/action";
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   const user = await getUser()
 
   if (!user) {
@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { bookId, dueDate } = await request.json()
+    const { bookId } = await request.json()
 
     const book = await prisma.book.findUnique({ where: { id: bookId } })
 
@@ -22,7 +22,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No copies available" }, { status: 400 })
     }
 
-    // Check if the user has already borrowed this book and not returned it
     const existingBorrowing = await prisma.borrowing.findFirst({
       where: {
         userId: user.id,
@@ -35,12 +34,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "You have already borrowed this book" }, { status: 400 })
     }
 
+    const borrowDate = new Date()
+    const dueDate = new Date(borrowDate)
+    dueDate.setDate(dueDate.getDate() + 7) 
+
     const borrowing = await prisma.borrowing.create({
       data: {
         userId: user.id,
         bookId,
-        dueDate: new Date(dueDate),
         status: "BORROWED",
+        borrowDate,
+        dueDate,
       },
       include: { book: true, user: true },
     })
@@ -57,7 +61,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   const user = await getUser()
 
   if (!user) {

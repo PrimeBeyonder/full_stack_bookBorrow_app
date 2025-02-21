@@ -29,7 +29,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     return NextResponse.json({ error: "Failed to fetch borrowing" }, { status: 500 })
   }
 }
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
   const user = await getUser()
 
   if (!user) {
@@ -48,17 +48,20 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: "Borrowing not found" }, { status: 404 })
     }
 
-    if (user.role !== "ADMIN" && borrowing.userId !== user.id) {
+    if (borrowing.userId !== user.id && user.role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
     const updatedBorrowing = await prisma.borrowing.update({
       where: { id: params.id },
-      data: { status },
+      data: {
+        status,
+        returnDate: status === "RETURNED" ? new Date() : null,
+      },
       include: { book: true, user: true },
     })
 
-    if (status === "RETURNED" && borrowing.status !== "RETURNED") {
+    if (status === "RETURNED") {
       await prisma.book.update({
         where: { id: borrowing.bookId },
         data: { availableCopies: { increment: 1 } },
