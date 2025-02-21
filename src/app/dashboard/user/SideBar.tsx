@@ -51,6 +51,11 @@ export function UserSidebar({ className }: SidebarProps) {
       icon: Heart,
       href: "/dashboard/user/wishlist",
     },
+    {
+      label: "History",
+      icon: Settings,
+      href: "/dashboard/user/borrowing-history",
+    }
   ]
 
   return (
