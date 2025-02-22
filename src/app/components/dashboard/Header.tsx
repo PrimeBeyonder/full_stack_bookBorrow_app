@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Bell, MessageSquare } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { LogOut } from "@/app/api/login/action"
+import { logout } from "@/app/api/login/action"
 
 export function Header() {
   const [user, setUser] = useState(null)
@@ -21,7 +21,7 @@ export function Header() {
   }, [])
 
   const handleLogout = async () => {
-    await LogOut()
+    await logout()
     localStorage.removeItem("user")
     router.push("auth/login")
   }
