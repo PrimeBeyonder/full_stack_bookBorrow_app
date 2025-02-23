@@ -7,7 +7,7 @@ export default withAuth(
 
     // No token means not authenticated
     if (!token) {
-      return NextResponse.redirect(new URL("/login", req.url))
+      return NextResponse.redirect(new URL("/auth/login", req.url))
     }
 
     // Check admin routes
@@ -27,7 +27,6 @@ export default withAuth(
   },
   {
     callbacks: {
-      // Return false to display the error page
       authorized: ({ token }) => !!token,
     },
   },

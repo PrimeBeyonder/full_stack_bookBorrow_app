@@ -9,6 +9,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Book, Calendar, Clock, Globe, Hash, Heart, Layers } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useSession } from "next-auth/react"
+import { ReviewForm } from "@/app/components/reviews/ReviewForm"
+import { ReviewList } from "@/app/components/reviews/ReviewList"
 
 interface Book {
   id: string
@@ -55,12 +58,16 @@ export default function BookDetailPage() {
   const isOverdue = currentBorrowing && new Date(currentBorrowing.dueDate) < new Date()
   const params = useParams()
   const { toast } = useToast()
+    const { data: session, status } = useSession()
+  const [showReviewForm, setShowReviewForm] = useState(false)
 
   useEffect(() => {
     fetchBook()
     fetchBorrowing()
     fetchBorrowingHistory()
-  }, [])
+     console.log("Session status:", status)
+    console.log("Session data:", session)
+  },  [session, status])
 
 const fetchBorrowingHistory = async () => {
     setIsLoading(true)
@@ -192,7 +199,8 @@ const fetchBorrowingHistory = async () => {
   if (!book) return <div>Book not found</div>
 
   return (
- <Card className="w-full max-w-4xl mx-auto bg-gray-50">
+    <div className="container mx-auto px-4 py-8">
+ <Card className="w-full max-w-6xl mx-auto bg-gray-50">
       <CardContent className="p-6">
         <div className="md:flex gap-6">
           <div className="md:w-1/3 mb-6 md:mb-0">
@@ -273,6 +281,24 @@ const fetchBorrowingHistory = async () => {
         </div>
       </CardContent>
     </Card>
+     <Card className="mt-8">
+        <CardContent className="p-6">
+          <h2 className="text-2xl font-bold mb-4">Reviews</h2>
+          {status === "loading" ? (
+            <div>Loading...</div>
+          ) : status === "authenticated" ? (
+            showReviewForm ? (
+              <ReviewForm bookId={book?.id as string} onSuccess={() => setShowReviewForm(false)} />
+            ) : (
+              <Button onClick={() => setShowReviewForm(true)}>Write a Review</Button>
+            )
+          ) : (
+            <p>Please log in to write a review.</p>
+          )}
+          <ReviewList bookId={book?.id as string} />
+        </CardContent>
+      </Card>
+    </div>
   )
 }
 

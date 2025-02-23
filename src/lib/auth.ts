@@ -1,17 +1,18 @@
-import type { NextAuthOptions } from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import { prisma } from "@/app/lib/prisma";  // Ensure Prisma instance is correctly imported
-import { compare } from "bcryptjs";
-import { cookies } from "next/headers";
+import type { NextAuthOptions } from "next-auth"
+import CredentialsProvider from "next-auth/providers/credentials"
+import { PrismaAdapter } from "@next-auth/prisma-adapter"
+import { prisma } from "@/app/lib/prisma"
+import { compare } from "bcryptjs"
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
+  secret: process.env.NEXTAUTH_SECRET,
   session: {
-    strategy: "jwt", // Using JWT for session handling
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   pages: {
-    signIn: "auth/login", // Custom login page
+    signIn: "/login",
   },
   providers: [
     CredentialsProvider({
@@ -22,62 +23,54 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          return null;
+          console.log("Missing email or password")
+          return null
         }
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
-        });
+        })
 
         if (!user || !user.password) {
-          return null;
+          console.log("User not found or password not set")
+          return null
         }
 
-        const isPasswordValid = await compare(credentials.password, user.password);
+        const isPasswordValid = await compare(credentials.password, user.password)
 
         if (!isPasswordValid) {
-          return null;
+          console.log("Invalid password")
+          return null
         }
 
+        console.log("User authenticated:", user.id)
         return {
           id: user.id,
           email: user.email,
           name: user.name,
           role: user.role,
-        };
+        }
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
-        token.role = user.role;
-        token.id = user.id;
+        token.role = user.role
+        token.id = user.id
       }
-      return token;
+      console.log("JWT callback:", token)
+      return token
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.role = token.role as string;
-        session.user.id = token.id as string;
+        session.user.role = token.role as string
+        session.user.id = token.id as string
       }
-      return session;
+      console.log("Session callback:", session)
+      return session
     },
   },
-  events: {
-    async signIn({ user }) {
-      const cookieStore = await cookies();
-      cookieStore.set("session", user.id, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60, // 1 week
-        path: "/",
-      });
-    },
-    async signOut() {
-      const cookieStore = await cookies();
-      cookieStore.delete("session");
-    },
-  },
-};
+  debug: process.env.NODE_ENV === "development",
+}
+

@@ -1,12 +1,14 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
+import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { login } from "@/app/api/login/action"
-import Link from "next/link"
 import { useToast } from "@/hooks/use-toast"
 
 export default function LoginPage() {
@@ -19,35 +21,35 @@ export default function LoginPage() {
     e.preventDefault()
 
     try {
-      const result = await login(email, password)
-      if (result.error) {
-        toast({
-          title: "Error",
-          description: result.error,
-          variant: "destructive",
-        })
-      } else {
-        // Store user info in localStorage on the client-side
-        localStorage.setItem("user", JSON.stringify(result.user))
+      const result = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
+      })
 
-        // Redirect based on user role
-        if (result.user && result.user.role === "ADMIN") {
-          router.push("/dashboard/admin")
-        } else {
-          router.push("/dashboard/user")
-        }
+      if (result?.error) {
+        throw new Error(result.error)
       }
-    } catch {
+
+      if (result?.ok) {
+        toast({
+          title: "Success",
+          description: "Logged in successfully",
+        })
+        router.push("/dashboard/user")
+        router.refresh()
+      }
+    } catch (error) {
       toast({
         title: "Error",
-        description: "An error occurred during login",
+        description: error instanceof Error ? error.message : "Failed to log in",
         variant: "destructive",
       })
     }
   }
 
   return (
-<div className="flex items-center justify-center min-h-screen bg-gray-100">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">Login</CardTitle>
@@ -67,12 +69,12 @@ export default function LoginPage() {
             </Button>
           </form>
           <div className="mt-4 text-center">
-            <Link href="signup" className="text-blue-600 hover:underline">
-              Do not have an account? Sign up
+            <Link href="/signup" className="text-blue-600 hover:underline">
+              Don't have an account? Sign up
             </Link>
           </div>
           <div className="mt-2 text-center">
-            <Link href="/auth/forget-password" className="text-blue-600 hover:underline">
+            <Link href="/forgot-password" className="text-blue-600 hover:underline">
               Forgot password?
             </Link>
           </div>
