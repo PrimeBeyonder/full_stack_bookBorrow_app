@@ -9,7 +9,7 @@ export async function POST(request: NextRequest, { params }: { params: { bookId:
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const bookId = params.bookId
+  const { bookId } = await params;
 
   try {
     const wishlistItem = await prisma.wishlistItem.create({
